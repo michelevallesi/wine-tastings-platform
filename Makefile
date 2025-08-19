@@ -1,0 +1,91 @@
+# Wine Tastings Platform Makefile
+
+.PHONY: help build dev prod test clean logs
+
+help: ## Show this help message
+	@echo 'Usage: make [target]'
+	@echo ''
+	@echo 'Targets:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+install: ## Install dependencies for all services
+	@echo "Installing backend dependencies..."
+	@cd backend && npm install
+	@for service in backend/services/*; do \
+		if [ -d "$$service" ] && [ -f "$$service/package.json" ]; then \
+			echo "Installing dependencies for $$service..."; \
+			cd $$service && npm install && cd ../../../; \
+		fi; \
+	done
+	@echo "Installing frontend dependencies..."
+	@cd frontend && npm install
+
+build: ## Build all Docker images
+	@echo "Building Docker images..."
+	docker-compose build
+
+dev: ## Start development environment
+	@echo "Starting development environment..."
+	docker-compose -f docker-compose.dev.yml up -d
+	@echo "Development environment started!"
+	@echo "Frontend: http://localhost:3001"
+	@echo "API: http://localhost:3000"
+	@echo "Database: localhost:5433"
+
+prod: ## Start production environment
+	@echo "Starting production environment..."
+	docker-compose up -d
+	@echo "Production environment started!"
+
+test: ## Run tests for all services
+	@echo "Running tests..."
+	@cd backend && npm test
+	@cd frontend && npm test
+
+lint: ## Run linting for all services
+	@echo "Running linter..."
+	@cd backend && npm run lint
+	@cd frontend && npm run lint
+
+db-migrate: ## Run database migrations
+	@echo "Running database migrations..."
+	docker-compose exec postgres psql -U wine_user -d wine_tastings -f /app/migrate.sql
+
+db-seed: ## Seed database with test data
+	@echo "Seeding database..."
+	docker-compose exec postgres psql -U wine_user -d wine_tastings -f /docker-entrypoint-initdb.d/seeds/001_initial_data.sql
+
+logs: ## Show logs for all services
+	docker-compose logs -f
+
+logs-service: ## Show logs for specific service (usage: make logs-service SERVICE=auth-service)
+	docker-compose logs -f $(SERVICE)
+
+stop: ## Stop all services
+	docker-compose down
+
+clean: ## Clean up containers, images and volumes
+	docker-compose down -v
+	docker system prune -f
+
+backup-db: ## Backup production database
+	@echo "Creating database backup..."
+	docker-compose exec postgres pg_dump -U wine_user wine_tastings > backup_$(shell date +%Y%m%d_%H%M%S).sql
+	@echo "Backup completed!"
+
+health: ## Check health of all services
+	@echo "Checking service health..."
+	@./infrastructure/scripts/health_check.sh
+
+deploy: ## Deploy to production
+	@echo "Deploying to production..."
+	@./infrastructure/scripts/deploy.sh production
+
+monitoring: ## Start monitoring stack
+	docker-compose up -d prometheus grafana
+	@echo "Monitoring available at:"
+	@echo "Prometheus: http://localhost:9090"
+	@echo "Grafana: http://localhost:3010 (admin/admin123)"
+
+setup: ## Setup development environment
+	@./infrastructure/scripts/setup.sh

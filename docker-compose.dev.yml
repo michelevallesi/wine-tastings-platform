@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: wine_tastings_dev
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_pass
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./backend/database/seeds:/docker-entrypoint-initdb.d/seeds/
+    ports:
+      - "5433:5432"
+    networks:
+      - wine-dev-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    networks:
+      - wine-dev-network
+
+  # In development, services run with hot reload
+  api-gateway:
+    build:
+      context: ./backend/services/api-gateway
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/services/api-gateway/src:/app/src
+      - ./backend/shared:/app/shared
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://dev_user:dev_pass@postgres:5432/wine_tastings_dev
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - wine-dev-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./frontend/src:/app/src
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - wine-dev-network
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  wine-dev-network:
+    driver: bridge

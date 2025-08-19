@@ -1,0 +1,232 @@
+version: '3.8'
+
+services:
+  # Database Services
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: wine_tastings
+      POSTGRES_USER: wine_user
+      POSTGRES_PASSWORD: wine_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./backend/database/seeds:/docker-entrypoint-initdb.d/seeds/
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wine_user -d wine_tastings"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - wine-network
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass wine_redis_pass
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - wine-network
+
+  # Backend Services
+  api-gateway:
+    build: ./backend/services/api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_URL=redis://:wine_redis_pass@redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - wine-network
+
+  auth-service:
+    build: ./backend/services/auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - REDIS_URL=redis://:wine_redis_pass@redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - wine-network
+
+  tenant-service:
+    build: ./backend/services/tenant-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - REDIS_URL=redis://:wine_redis_pass@redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wine-network
+
+  tasting-service:
+    build: ./backend/services/tasting-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - REDIS_URL=redis://:wine_redis_pass@redis:6379
+      - FILE_STORAGE_PATH=/uploads
+    volumes:
+      - uploads_data:/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wine-network
+
+  booking-service:
+    build: ./backend/services/booking-service
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - REDIS_URL=redis://:wine_redis_pass@redis:6379
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3006
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wine-network
+
+  payment-service:
+    build: ./backend/services/payment-service
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wine-network
+
+  notification-service:
+    build: ./backend/services/notification-service
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wine-network
+
+  analytics-service:
+    build: ./backend/services/analytics-service
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - REDIS_URL=redis://:wine_redis_pass@redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wine-network
+
+  file-service:
+    build: ./backend/services/file-service
+    ports:
+      - "3008:3008"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - FILE_STORAGE_PATH=/uploads
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+    volumes:
+      - uploads_data:/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wine-network
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://api-gateway:3000
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - wine-network
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - wine-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3010:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - wine-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:
+  grafana_data:
+
+networks:
+  wine-network:
+    driver: bridge
