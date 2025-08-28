@@ -78,9 +78,9 @@ export const slugify = (text) => {
   return text
     .toString()
     .toLowerCase()
-    .replace(/\\s+/g, '-')           // Replace spaces with -
-    .replace(/[^\\w\\-]+/g, '')       // Remove all non-word chars
-    .replace(/\\-\\-+/g, '-')         // Replace multiple - with single -
+    .replace(/\s+/g, '-')           // Replace spaces with -
+    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
     .replace(/^-+/, '')             // Trim - from start of text
     .replace(/-+$/, '');            // Trim - from end of text
 };
@@ -113,19 +113,19 @@ export const sortBy = (array, key, direction = 'asc') => {
 
 // Validation utilities
 export const isValidEmail = (email) => {
-  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return re.test(email);
 };
 
 export const isValidPhone = (phone) => {
   // Italian phone number validation
-  const re = /^[\\+]?[0-9]{10,15}$/;
-  return re.test(phone.replace(/\\s/g, ''));
+  const re = /^[\+]?[0-9]{10,15}$/;
+  return re.test(phone.replace(/\s/g, ''));
 };
 
 export const isValidPassword = (password) => {
   // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
-  const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d@$!%*?&]{8,}$/;
+  const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
   return re.test(password);
 };
 
