@@ -1,0 +1,548 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with automatic seeding
+  postgres:
+    image: postgres:15-alpine
+    container_name: vinbooking-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vinbooking_db
+      POSTGRES_USER: vinbooking_user
+      POSTGRES_PASSWORD: vinbooking_secure_password_2025
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - vinbooking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vinbooking_user -d vinbooking_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: vinbooking-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: vinbooking_redis_secure_2025
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vinbooking-network
+    command: >
+      redis-server 
+      --appendonly yes 
+      --requirepass vinbooking_redis_secure_2025
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # API Gateway - Central Entry Point
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: vinbooking-api-gateway
+    restart: unless-stopped
+    environment:
+      # Server
+      PORT: 3000
+      NODE_ENV: production
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: vinbooking_redis_secure_2025
+      
+      # Microservices URLs
+      AUTH_SERVICE_URL: http://auth-service:3001
+      PRODUCER_SERVICE_URL: http://producer-service:3002
+      PACKAGE_SERVICE_URL: http://package-service:3003
+      BOOKING_SERVICE_URL: http://booking-service:3004
+      PAYMENT_SERVICE_URL: http://payment-service:3005
+      EMAIL_SERVICE_URL: http://email-service:3006
+      
+      # Security
+      JWT_SECRET: vinbooking-super-secret-jwt-key-2025-production-32chars-min
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost,http://127.0.0.1:3000
+      API_KEY_HEADER: X-API-Key
+      
+      # Rate Limiting
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 1000
+      RATE_LIMIT_BURST_REQUESTS: 50
+      
+      # Circuit Breaker
+      CIRCUIT_BREAKER_THRESHOLD: 5
+      CIRCUIT_BREAKER_TIMEOUT: 60000
+      CIRCUIT_BREAKER_RESET_TIMEOUT: 30000
+      
+      # Request Timeouts
+      DEFAULT_TIMEOUT: 30000
+      AUTH_TIMEOUT: 10000
+      PAYMENT_TIMEOUT: 45000
+      
+      # Monitoring
+      ENABLE_METRICS: true
+      METRICS_PORT: 9090
+      
+      # API Versioning
+      API_VERSION: v1
+      ENABLE_API_VERSIONING: true
+    ports:
+      - "3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      package-service:
+        condition: service_healthy
+    networks:
+      - vinbooking-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Auth Service - Authentication and Authorization
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: vinbooking-auth-service
+    restart: unless-stopped
+    environment:
+      # Server
+      PORT: 3001
+      NODE_ENV: production
+      
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: vinbooking_db
+      DB_USER: vinbooking_user
+      DB_PASSWORD: vinbooking_secure_password_2025
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: vinbooking_redis_secure_2025
+      
+      # JWT Configuration
+      JWT_SECRET: vinbooking-super-secret-jwt-key-2025-production-32chars-min
+      JWT_EXPIRES_IN: 24h
+      REFRESH_TOKEN_EXPIRES_IN: 7d
+      BCRYPT_ROUNDS: 12
+      
+      # External Services
+      EMAIL_SERVICE_URL: http://email-service:3006
+      
+      # Security
+      ALLOWED_ORIGINS: http://api-gateway:3000
+      SESSION_SECRET: vinbooking-session-secret-key-2025-secure
+      
+      # Rate Limiting
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+    # Remove external port - only accessible via API Gateway
+    expose:
+      - "3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vinbooking-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Producer Service - Wine Producer Management
+  producer-service:
+    build:
+      context: ./services/producer-service
+      dockerfile: Dockerfile
+    container_name: vinbooking-producer-service
+    restart: unless-stopped
+    environment:
+      # Server
+      PORT: 3002
+      NODE_ENV: production
+      
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: vinbooking_db
+      DB_USER: vinbooking_user
+      DB_PASSWORD: vinbooking_secure_password_2025
+      
+      # External Services
+      AUTH_SERVICE_URL: http://auth-service:3001
+      PACKAGE_SERVICE_URL: http://package-service:3003
+      BOOKING_SERVICE_URL: http://booking-service:3004
+      EMAIL_SERVICE_URL: http://email-service:3006
+      
+      # File Upload
+      UPLOAD_DIR: /app/uploads
+      MAX_IMAGE_SIZE: 10485760
+      SUPPORTED_IMAGE_FORMATS: jpeg,jpg,png,webp
+      IMAGE_QUALITY: 85
+      
+      # Security - Only API Gateway can access
+      ALLOWED_ORIGINS: http://api-gateway:3000
+      
+      # API Configuration
+      TENANT_KEY_LENGTH: 32
+      API_RATE_LIMIT: 300
+    expose:
+      - "3002"
+    volumes:
+      - producer_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vinbooking-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Package Service - Wine Package Management
+  package-service:
+    build:
+      context: ./services/package-service
+      dockerfile: Dockerfile
+    container_name: vinbooking-package-service
+    restart: unless-stopped
+    environment:
+      # Server
+      PORT: 3003
+      NODE_ENV: production
+      
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: vinbooking_db
+      DB_USER: vinbooking_user
+      DB_PASSWORD: vinbooking_secure_password_2025
+      
+      # External Services
+      AUTH_SERVICE_URL: http://auth-service:3001
+      BOOKING_SERVICE_URL: http://booking-service:3004
+      PRODUCER_SERVICE_URL: http://producer-service:3002
+      
+      # File Upload
+      UPLOAD_DIR: /app/uploads
+      MAX_IMAGE_SIZE: 10485760
+      MAX_IMAGES_PER_PACKAGE: 10
+      SUPPORTED_IMAGE_FORMATS: jpeg,jpg,png,webp
+      IMAGE_QUALITY: 85
+      
+      # Business Rules
+      MIN_PRICE: 5.00
+      MAX_PRICE: 1000.00
+      MIN_PARTICIPANTS: 1
+      MAX_PARTICIPANTS: 50
+      MIN_DURATION_MINUTES: 30
+      MAX_DURATION_MINUTES: 480
+      ADVANCE_BOOKING_DAYS: 365
+      
+      # Security - Only API Gateway can access
+      ALLOWED_ORIGINS: http://api-gateway:3000
+    expose:
+      - "3003"
+    volumes:
+      - package_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vinbooking-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Booking Service - Reservation Management
+  booking-service:
+    build:
+      context: ./services/booking-service
+      dockerfile: Dockerfile
+    container_name: vinbooking-booking-service
+    restart: unless-stopped
+    environment:
+      # Server
+      PORT: 3004
+      NODE_ENV: production
+      
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: vinbooking_db
+      DB_USER: vinbooking_user
+      DB_PASSWORD: vinbooking_secure_password_2025
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: vinbooking_redis_secure_2025
+      
+      # External Services
+      AUTH_SERVICE_URL: http://auth-service:3001
+      PACKAGE_SERVICE_URL: http://package-service:3003
+      PAYMENT_SERVICE_URL: http://payment-service:3005
+      EMAIL_SERVICE_URL: http://email-service:3006
+      PRODUCER_SERVICE_URL: http://producer-service:3002
+      
+      # Business Rules
+      BOOKING_TIMEOUT_MINUTES: 15
+      ADVANCE_BOOKING_DAYS: 365
+      MIN_BOOKING_AMOUNT: 5.00
+      MAX_BOOKING_AMOUNT: 2000.00
+      CONFIRMATION_CODE_LENGTH: 8
+      
+      # Security - Only API Gateway can access
+      ALLOWED_ORIGINS: http://api-gateway:3000
+      
+      # Notification Settings
+      SEND_SMS_NOTIFICATIONS: false
+      SEND_EMAIL_NOTIFICATIONS: true
+      REMINDER_HOURS_BEFORE: 24
+    expose:
+      - "3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vinbooking-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Payment Service - Payment Processing
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: vinbooking-payment-service
+    restart: unless-stopped
+    environment:
+      # Server
+      PORT: 3005
+      NODE_ENV: production
+      
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: vinbooking_db
+      DB_USER: vinbooking_user
+      DB_PASSWORD: vinbooking_secure_password_2025
+      
+      # External Services
+      AUTH_SERVICE_URL: http://auth-service:3001
+      BOOKING_SERVICE_URL: http://booking-service:3004
+      EMAIL_SERVICE_URL: http://email-service:3006
+      
+      # Stripe Configuration (Replace with your actual keys)
+      STRIPE_SECRET_KEY: sk_test_51234567890abcdefghijklmnop
+      STRIPE_PUBLISHABLE_KEY: pk_test_51234567890abcdefghijklmnop
+      STRIPE_WEBHOOK_SECRET: whsec_1234567890abcdefghijklmnop
+      
+      # PayPal Configuration (Replace with your actual keys)
+      PAYPAL_CLIENT_ID: AYourPayPalClientId1234567890
+      PAYPAL_CLIENT_SECRET: EYourPayPalClientSecret1234567890
+      PAYPAL_MODE: sandbox
+      PAYPAL_WEBHOOK_ID: 12345678-90AB-CDEF-1234-567890ABCDEF
+      
+      # Security & Encryption
+      ENCRYPTION_KEY: vinbooking-payment-encryption-32char
+      ALLOWED_ORIGINS: http://api-gateway:3000
+      
+      # Business Rules
+      MIN_PAYMENT_AMOUNT: 5.00
+      MAX_PAYMENT_AMOUNT: 5000.00
+      REFUND_DEADLINE_HOURS: 24
+      PAYMENT_TIMEOUT_MINUTES: 30
+      
+      # Frontend URLs for redirects
+      FRONTEND_URL: http://localhost:3000
+    expose:
+      - "3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vinbooking-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Email Service - Email Notifications
+  email-service:
+    build:
+      context: ./services/email-service
+      dockerfile: Dockerfile
+    container_name: vinbooking-email-service
+    restart: unless-stopped
+    environment:
+      # Server
+      PORT: 3006
+      NODE_ENV: production
+      
+      # SMTP Configuration (Replace with your actual SMTP settings)
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_SECURE: false
+      SMTP_USER: your-vinbooking-email@gmail.com
+      SMTP_PASS: your-app-specific-password
+      EMAIL_FROM: '"VinBooking Platform" <noreply@vinbooking.com>'
+      
+      # Email Templates
+      COMPANY_NAME: VinBooking
+      COMPANY_WEBSITE: https://vinbooking.com
+      SUPPORT_EMAIL: support@vinbooking.com
+      FRONTEND_URL: http://localhost:3000
+      
+      # Security - Only API Gateway and other services can access
+      ALLOWED_ORIGINS: http://api-gateway:3000
+      
+      # Rate Limiting
+      EMAIL_RATE_LIMIT_PER_HOUR: 100
+      EMAIL_RATE_LIMIT_PER_DAY: 1000
+      
+      # Queue Settings
+      EMAIL_QUEUE_DELAY_MS: 1000
+      MAX_RETRY_ATTEMPTS: 3
+    expose:
+      - "3006"
+    networks:
+      - vinbooking-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy & Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: vinbooking-nginx
+    restart: unless-stopped
+    ports:
+      - "9080:80"
+      - "9443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/html:/var/www/html:ro
+      - package_uploads:/var/www/packages:ro
+      - producer_uploads:/var/www/producers:ro
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - vinbooking-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: pgAdmin for database management (remove in production)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: vinbooking-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@vinbooking.com
+      PGADMIN_DEFAULT_PASSWORD: vinbooking_pgadmin_2025
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vinbooking-network
+    profiles:
+      - development
+
+  # Optional: Redis Commander for Redis management (remove in production)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: vinbooking-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: "local:redis:6379:0:vinbooking_redis_secure_2025"
+      HTTP_USER: admin
+      HTTP_PASSWORD: vinbooking_redis_admin_2025
+    ports:
+      - "8081:8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - vinbooking-network
+    profiles:
+      - development
+
+volumes:
+  # Persistent data volumes
+  postgres_data:
+    driver: local
+    name: vinbooking_postgres_data
+  
+  redis_data:
+    driver: local
+    name: vinbooking_redis_data
+  
+  package_uploads:
+    driver: local
+    name: vinbooking_package_uploads
+  
+  producer_uploads:
+    driver: local
+    name: vinbooking_producer_uploads
+  
+  pgadmin_data:
+    driver: local
+    name: vinbooking_pgadmin_data
+
+networks:
+  vinbooking-network:
+    name: vinbooking_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

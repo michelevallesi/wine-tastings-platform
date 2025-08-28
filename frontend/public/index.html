@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#8B4513" />
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="VinBooking - La piattaforma per prenotare degustazioni vinicole nelle migliori cantine italiane. Scopri esperienze uniche tra vini pregiati e paesaggi mozzafiato." />
+    <meta name="keywords" content="degustazioni vino, cantine italiane, prenotazione degustazioni, turismo enogastronomico, vini italiani, esperienze vinicole" />
+    <meta name="author" content="VinBooking Platform" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="VinBooking - Degustazioni Vinicole Italiane" />
+    <meta property="og:description" content="Prenota degustazioni esclusive nelle migliori cantine d'Italia. Esperienze autentiche tra vini pregiati e tradizioni secolari." />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.jpg" />
+    <meta property="og:url" content="https://vinbooking.com" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="it_IT" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="VinBooking - Degustazioni Vinicole Italiane" />
+    <meta name="twitter:description" content="Prenota degustazioni esclusive nelle migliori cantine d'Italia" />
+    <meta name="twitter:image" content="%PUBLIC_URL%/og-image.jpg" />
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Preload critical fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com https://api.paypal.com wss: ws:; frame-src https://js.stripe.com https://www.paypal.com;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <title>VinBooking - Degustazioni Vinicole nelle Migliori Cantine d'Italia</title>
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "VinBooking",
+      "description": "Piattaforma per prenotazioni di degustazioni vinicole in Italia",
+      "url": "https://vinbooking.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://vinbooking.com/packages?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "VinBooking",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://vinbooking.com/logo-512x512.png"
+        }
+      }
+    }
+    </script>
+  </head>
+  
+  <body>
+    <noscript>
+      <div style="padding: 2rem; text-align: center; font-family: Arial, sans-serif;">
+        <h1>JavaScript Richiesto</h1>
+        <p>VinBooking richiede JavaScript per funzionare correttamente.</p>
+        <p>Per favore abilita JavaScript nel tuo browser e ricarica la pagina.</p>
+        <p><a href="https://www.enable-javascript.com/it/" target="_blank" rel="noopener">Come abilitare JavaScript</a></p>
+      </div>
+    </noscript>
+    
+    <!-- Main App Container -->
+    <div id="root"></div>
+    
+    <!-- Loading Screen -->
+    <div id="loading-screen" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #8B4513 0%, #DAA520 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      z-index: 9999;
+    ">
+      <div style="
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(255,255,255,0.3);
+        border-top: 4px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      "></div>
+      <h2 style="margin: 0; font-weight: 300;">VinBooking</h2>
+      <p style="margin: 10px 0 0 0; opacity: 0.8;">Caricamento...</p>
+    </div>
+    
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* Hide loading screen when React app loads */
+      #root:not(:empty) + #loading-screen {
+        display: none;
+      }
+      
+      /* Reset and base styles */
+      * {
+        box-sizing: border-box;
+      }
+      
+      body {
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #FFF8F0;
+        color: #2E2E2E;
+        line-height: 1.6;
+      }
+      
+      code {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      }
+      
+      /* Accessibility improvements */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      
+      /* Focus styles */
+      *:focus {
+        outline: 2px solid #8B4513;
+        outline-offset: 2px;
+      }
+      
+      /* Skip link for accessibility */
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 6px;
+        background: #8B4513;
+        color: white;
+        padding: 8px;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: top 0.3s;
+      }
+      
+      .skip-link:focus {
+        top: 6px;
+      }
+    </style>
+    
+    <!-- Skip link for screen readers -->
+    <a href="#main-content" class="skip-link">Salta al contenuto principale</a>
+  </body>
+</html>
+''',
+
+    "frontend/public/manifest.json": '''{
+  "short_name": "VinBooking",
+  "name": "VinBooking - Degustazioni Vinicole Italiane",
+  "description": "Prenota degustazioni esclusive nelle migliori cantine d'Italia",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#8B4513",
+  "background_color": "#FFF8F0",
+  "scope": "/",
+  "lang": "it",
+  "categories": ["food", "travel", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Cerca Degustazioni",
+      "short_name": "Cerca",
+      "description": "Trova degustazioni vinicole",
+      "url": "/packages",
+      "icons": [{ "src": "/search-icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Le Mie Prenotazioni",
+      "short_name": "Prenotazioni",
+      "description": "Visualizza le tue prenotazioni",
+      "url": "/my-bookings",
+      "icons": [{ "src": "/booking-icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Profilo",
+      "short_name": "Profilo",
+      "description": "Gestisci il tuo profilo",
+      "url": "/profile",
+      "icons": [{ "src": "/profile-icon-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "VinBooking Home Page"
+    },
+    {
+      "src": "screenshot-narrow.png", 
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "VinBooking Mobile"
+    }
+  ],
+  "prefer_related_applications": false
+}

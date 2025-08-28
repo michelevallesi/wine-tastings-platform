@@ -1,0 +1,187 @@
+version: "3.8"
+
+################################################################################
+# RETI E VOLUMI
+################################################################################
+networks:
+  wine-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+
+################################################################################
+# SERVIZI DI INFRASTRUTTURA
+################################################################################
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: wine_tastings
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      - wine-net
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - wine-net
+    ports:
+      - "6379:6379"
+
+################################################################################
+# BACKEND – API GATEWAY
+################################################################################
+  api-gateway:
+    build:
+      context: ./backend/services/api-gateway
+      dockerfile: Dockerfile          # (è già nella cartella)
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/wine_tastings
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      PORT: 3000
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - wine-net
+    ports:
+      - "3000:3000"
+
+################################################################################
+# BACKEND – MICROSERVIZI
+################################################################################
+  auth-service:
+    build: ./backend/services/auth-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/wine_tastings
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      PORT: 3001
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - wine-net
+    ports:
+      - "3001:3001"
+
+  tenant-service:
+    build: ./backend/services/tenant-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/wine_tastings
+      PORT: 3002
+    depends_on:
+      - postgres
+    networks:
+      - wine-net
+    ports:
+      - "3002:3002"
+
+  tasting-service:
+    build: ./backend/services/tasting-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/wine_tastings
+      REDIS_URL: redis://redis:6379
+      PORT: 3003
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - wine-net
+    ports:
+      - "3003:3003"
+
+  booking-service:
+    build: ./backend/services/booking-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/wine_tastings
+      REDIS_URL: redis://redis:6379
+      PORT: 3004
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - wine-net
+    ports:
+      - "3004:3004"
+
+  payment-service:
+    build: ./backend/services/payment-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/wine_tastings
+      PORT: 3005
+    depends_on:
+      - postgres
+    networks:
+      - wine-net
+    ports:
+      - "3005:3005"
+
+  notification-service:
+    build: ./backend/services/notification-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/wine_tastings
+      PORT: 3006
+    depends_on:
+      - postgres
+    networks:
+      - wine-net
+    ports:
+      - "3006:3006"
+
+  analytics-service:
+    build: ./backend/services/analytics-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/wine_tastings
+      REDIS_URL: redis://redis:6379
+      PORT: 3007
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - wine-net
+    ports:
+      - "3007:3007"
+
+  file-service:
+    build: ./backend/services/file-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/wine_tastings
+      REDIS_URL: redis://redis:6379
+      FILE_STORAGE_PATH: /uploads
+      PORT: 3008
+    volumes:
+      - ./uploads:/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - wine-net
+    ports:
+      - "3008:3008"
+
+################################################################################
+# FRONTEND SPA
+################################################################################
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://localhost:3000
+    depends_on:
+      - api-gateway
+    networks:
+      - wine-net
+    ports:
+      - "4001:80"

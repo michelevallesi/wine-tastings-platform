@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pagina Non Trovata - VinBooking</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #8B4513 0%, #DAA520 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .wine-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            opacity: 0.8;
+        }
+        
+        .button {
+            display: inline-block;
+            background: white;
+            color: #8B4513;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        
+        .button:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+        }
+        
+        .button-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .button-outline:hover {
+            background: white;
+            color: #8B4513;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.25rem; }
+            p { font-size: 1rem; }
+            .button {
+                display: block;
+                margin: 0.5rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="wine-icon">🍷</div>
+        <h1>404</h1>
+        <h2>Pagina Non Trovata</h2>
+        <p>
+            Sembra che questa pagina abbia preso una strada diversa, 
+            proprio come un buon vino che ha bisogno del suo tempo per essere trovato.
+        </p>
+        <p>
+            Non preoccuparti, possiamo aiutarti a trovare quello che stai cercando!
+        </p>
+        
+        <div>
+            <a href="/" class="button">Torna alla Home</a>
+            <a href="/packages" class="button button-outline">Esplora Degustazioni</a>
+        </div>
+    </div>
+    
+    <script>
+        // Auto redirect to home after 10 seconds if no interaction
+        setTimeout(function() {
+            if (document.visibilityState === 'visible') {
+                window.location.href = '/';
+            }
+        }, 10000);
+    </script>
+</body>
+</html>
+''',
+
+    "frontend/public/50x.html": '''<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Errore del Server - VinBooking</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #8B4513 0%, #DAA520 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            opacity: 0.8;
+        }
+        
+        .button {
+            display: inline-block;
+            background: white;
+            color: #8B4513;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        
+        .button:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+        }
+        
+        .retry-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.25rem; }
+            p { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-icon">⚠️</div>
+        <h1>500</h1>
+        <h2>Errore del Server</h2>
+        <p>
+            Il nostro server sta attraversando un momento difficile, 
+            proprio come un vino che ha bisogno di tempo per decantare.
+        </p>
+        <p>
+            I nostri tecnici sono al lavoro per risolvere il problema il prima possibile.
+        </p>
+        
+        <div>
+            <a href="javascript:location.reload()" class="button">Riprova</a>
+            <a href="/" class="button">Torna alla Home</a>
+        </div>
+        
+        <div class="retry-info">
+            <p><strong>Cosa puoi fare:</strong></p>
+            <p>• Riprova tra qualche minuto</p>
+            <p>• Verifica la tua connessione internet</p>
+            <p>• Contatta il supporto se il problema persiste</p>
+            <p>Email: <a href="mailto:support@vinbooking.com" style="color: white;">support@vinbooking.com</a></p>
+        </div>
+    </div>
+    
+    <script>
+        // Auto retry every 30 seconds
+        setInterval(function() {
+            if (navigator.onLine) {
+                fetch('/')
+                    .then(response => {
+                        if (response.ok) {
+                            window.location.reload();
+                        }
+                    })
+                    .catch(() => {
+                        // Continue waiting
+                    });
+            }
+        }, 30000);
+        
+        // Show connection status
+        window.addEventListener('online', function() {
+            location.reload();
+        });
+        
+        window.addEventListener('offline', function() {
+            const retryInfo = document.querySelector('.retry-info');
+            retryInfo.innerHTML = '<p style="color: #ffeb3b;"><strong>Connessione Internet Assente</strong></p><p>Controlla la tua connessione e riprova.</p>';
+        });
+    </script>
+</body>
+</html>

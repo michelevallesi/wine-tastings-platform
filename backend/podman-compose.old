@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: vinbooking_postgres
+    environment:
+      POSTGRES_DB: vinbooking_db
+      POSTGRES_USER: vinbooking_user
+      POSTGRES_PASSWORD: vinbooking_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./database/migrations:/docker-entrypoint-initdb.d/migrations
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vinbooking_user -d vinbooking_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - vinbooking_network
+
+  auth-service:
+    build: 
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: vinbooking_auth
+    environment:
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: vinbooking_db
+      DB_USER: vinbooking_user
+      DB_PASSWORD: vinbooking_password
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_EXPIRES_IN: 24h
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vinbooking_network
+
+  api-gateway:
+    build: 
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: vinbooking_gateway
+    environment:
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-service:3001
+      PRODUCER_SERVICE_URL: http://producer-service:3002
+      PACKAGE_SERVICE_URL: http://package-service:3003
+      BOOKING_SERVICE_URL: http://booking-service:3004
+      PAYMENT_SERVICE_URL: http://payment-service:3005
+      EMAIL_SERVICE_URL: http://email-service:3006
+      ALLOWED_ORIGINS: http://localhost:8080,https://yourdomain.com
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+    networks:
+      - vinbooking_network
+
+volumes:
+  postgres_data:
+
+networks:
+  vinbooking_network:
+    driver: bridge

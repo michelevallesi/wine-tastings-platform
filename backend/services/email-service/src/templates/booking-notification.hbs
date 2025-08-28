@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuova Prenotazione - VinBooking</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            background-color: #f7f7f7; 
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 20px auto; 
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white; 
+            padding: 40px 30px; 
+            text-align: center;
+        }
+        .header h1 { 
+            font-size: 2.2em; 
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        .header h2 { 
+            font-size: 1.3em; 
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        .notification-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .content { 
+            padding: 40px 30px; 
+            background: #ffffff;
+        }
+        .alert-box {
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            margin-bottom: 25px;
+        }
+        .alert-box h3 {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .booking-details { 
+            background: #f8f9fa; 
+            padding: 25px; 
+            margin: 25px 0; 
+            border-radius: 8px; 
+            border-left: 4px solid #28a745;
+        }
+        .booking-details h3 {
+            color: #28a745;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .detail-section {
+            margin: 20px 0;
+        }
+        .detail-section h4 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+        .detail-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 12px 0; 
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label { 
+            font-weight: 600; 
+            color: #555;
+            flex: 1;
+        }
+        .detail-value { 
+            font-weight: 500;
+            color: #333;
+            text-align: right;
+            flex: 1;
+        }
+        .highlight { 
+            color: #28a745; 
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .customer-info {
+            background: #e8f4fd;
+            border-left: 4px solid #007bff;
+        }
+        .customer-info h4 {
+            color: #007bff;
+        }
+        .action-buttons {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            margin: 10px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background: #28a745;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #218838;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .footer { 
+            padding: 30px; 
+            text-align: center; 
+            color: #6c757d; 
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer-brand {
+            font-weight: 600;
+            color: #28a745;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+        .footer p {
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+        .footer-note {
+            font-size: 0.8em;
+            color: #adb5bd;
+            margin-top: 15px;
+            border-top: 1px solid #dee2e6;
+            padding-top: 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 8px;
+            }
+            .header, .content {
+                padding: 20px;
+            }
+            .detail-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .detail-value {
+                text-align: left;
+            }
+            .btn {
+                display: block;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="notification-icon">🔔</span>
+            <h1>VinBooking</h1>
+            <h2>Nuova Prenotazione</h2>
+        </div>
+        
+        <div class="content">
+            <div class="alert-box">
+                <h3><span>✅</span> Prenotazione Ricevuta</h3>
+                <p>È stata ricevuta una nuova prenotazione sulla piattaforma VinBooking. Tutti i dettagli sono riportati qui di seguito.</p>
+            </div>
+            
+            <div class="booking-details">
+                <h3><span>📋</span> Dettagli Prenotazione</h3>
+                
+                <div class="detail-row">
+                    <span class="detail-label">ID Prenotazione</span>
+                    <span class="detail-value"><strong>{{bookingId}}</strong></span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Pacchetto Degustazione</span>
+                    <span class="detail-value"><strong>{{packageName}}</strong></span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Data Prenotazione</span>
+                    <span class="detail-value highlight">{{bookingDate}}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Orario</span>
+                    <span class="detail-value highlight">{{bookingTime}}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Numero Partecipanti</span>
+                    <span class="detail-value">{{participants}} {{#if (eq participants 1)}}persona{{else}}persone{{/if}}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Valore Totale</span>
+                    <span class="detail-value highlight"><strong>€{{totalPrice}}</strong></span>
+                </div>
+            </div>
+            
+            <div class="booking-details customer-info">
+                <h3><span>👤</span> Informazioni Cliente</h3>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Nome Completo</span>
+                    <span class="detail-value"><strong>{{customerName}}</strong></span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Email</span>
+                    <span class="detail-value">{{customerEmail}}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Telefono</span>
+                    <span class="detail-value">{{customerPhone}}</span>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <p style="margin-bottom: 20px;"><strong>Accedi al dashboard per gestire questa prenotazione:</strong></p>
+                <a href="#" class="btn btn-primary">Visualizza Prenotazione</a>
+                <a href="#" class="btn btn-secondary">Dashboard Completo</a>
+            </div>
+            
+            <div style="background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 25px 0;">
+                <h4 style="margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                    <span>⚠️</span> Prossime Azioni
+                </h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li style="margin-bottom: 8px;">Confermare la disponibilità per la data e orario richiesti</li>
+                    <li style="margin-bottom: 8px;">Preparare i materiali per la degustazione</li>
+                    <li style="margin-bottom: 8px;">Contattare il cliente se necessario per informazioni aggiuntive</li>
+                    <li>Aggiornare lo stato della prenotazione nel sistema</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-brand">VinBooking Dashboard</div>
+            <p>Sistema di gestione prenotazioni per produttori vinicoli</p>
+            <p>Support: <a href="mailto:support@vinbooking.com" style="color: #28a745;">support@vinbooking.com</a></p>
+            <div class="footer-note">
+                <p>Questa notifica è stata generata automaticamente. Per modificare le impostazioni di notifica, accedi al tuo dashboard.</p>
+                <p>&copy; {{currentYear}} VinBooking. Tutti i diritti riservati.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

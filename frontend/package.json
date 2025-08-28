@@ -1,0 +1,107 @@
+{
+  "name": "vinbooking-frontend",
+  "version": "1.0.0",
+  "description": "VinBooking Platform - React Frontend Application",
+  "author": "VinBooking Team",
+  "license": "MIT",
+  "homepage": "https://vinbooking.com",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.14.19",
+    "@mui/lab": "^5.0.0-alpha.155",
+    "@mui/material": "^5.14.20",
+    "@mui/x-date-pickers": "^6.18.2",
+    "@stripe/react-stripe-js": "^2.4.0",
+    "@stripe/stripe-js": "^2.2.0",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.5.1",
+    "axios": "^1.6.2",
+    "date-fns": "^2.30.0",
+    "lodash.debounce": "^4.0.8",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.1",
+    "react-query": "^3.39.3",
+    "react-router-dom": "^6.20.1",
+    "react-scripts": "5.0.1",
+    "react-helmet-async": "^2.0.4",
+    "react-error-boundary": "^3.1.0",
+    "recharts": "^2.1.9",
+    "web-vitals": "^3.5.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "analyze": "npm run build && npx serve -s build",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "format": "prettier --write src/**/*.{js,jsx,ts,tsx,json,css,scss,md}",
+    "type-check": "tsc --noEmit",
+    "pre-commit": "npm run lint && npm run format && npm run type-check",
+    "serve": "serve -s build -l 3000"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "rules": {
+      "no-console": "warn",
+      "no-debugger": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+      "no-unused-vars": "warn"
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all",
+      "not ie <= 11"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/lodash.debounce": "^4.0.9",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "serve": "^14.2.1",
+    "typescript": "^4.9.5"
+  },
+  "proxy": "http://localhost:3000",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "react",
+    "wine",
+    "booking",
+    "tastings",
+    "italy",
+    "vineyards",
+    "tourism",
+    "experiences",
+    "material-ui",
+    "pwa"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vinbooking/frontend"
+  },
+  "bugs": {
+    "url": "https://github.com/vinbooking/frontend/issues"
+  },
+  "resolutions": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.0"
+  }
+}
