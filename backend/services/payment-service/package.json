@@ -18,7 +18,8 @@
     "jsonwebtoken": "^9.0.0",
     "pg": "^8.10.0",
     "stripe": "^12.8.0",
-    "paypal-rest-sdk": "^1.8.1"
+    "paypal-rest-sdk": "^1.8.1",
+    "@mollie/api-client": "^3.7.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22",

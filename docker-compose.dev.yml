@@ -163,6 +163,12 @@ services:
       - PORT=3005
       - DATABASE_URL=postgresql://dev_user:dev_pass@postgres:5432/wine_tastings_dev
       - JWT_SECRET=dev-secret-for-local
+      # Set these to your sandbox keys to test real payment flows in dev.
+      # Leave unset to run in mock mode (payments recorded without external calls).
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_RETURN_URL=${STRIPE_RETURN_URL:-http://localhost:3001/booking/confirm}
+      - MOLLIE_API_KEY=${MOLLIE_API_KEY:-}
+      - MOLLIE_REDIRECT_URL=${MOLLIE_REDIRECT_URL:-http://localhost:3001/booking/confirm}
     depends_on:
       postgres:
         condition: service_healthy

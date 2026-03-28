@@ -34,10 +34,12 @@ REDIS_URL=redis://:wine_redis_pass@redis:6379
 # CORS — comma-separated list of allowed frontend origins
 ALLOWED_ORIGINS=https://wine-tastings.com,https://www.wine-tastings.com
 
-# Payment providers (needed for live payments)
-STRIPE_SECRET_KEY=sk_live_...
-PAYPAL_CLIENT_ID=...
-PAYPAL_CLIENT_SECRET=...
+# Payment providers — both are optional; the service falls back to mock mode
+# if neither key is set (useful for development without a real provider account)
+STRIPE_SECRET_KEY=sk_live_...          # or sk_test_... for sandbox
+STRIPE_RETURN_URL=https://your-domain.com/booking/confirm
+MOLLIE_API_KEY=live_...                # or test_... for sandbox
+MOLLIE_REDIRECT_URL=https://your-domain.com/booking/confirm
 
 # Email (SMTP) — leave unset to queue-only mode
 SMTP_HOST=smtp.yourdomain.com
@@ -52,6 +54,65 @@ AWS_S3_BUCKET=wine-tastings-files   # when S3 integration is ready
 # Monitoring
 GRAFANA_ADMIN_PASSWORD=change-me-in-production
 ```
+
+---
+
+## Payment Gateway Setup
+
+Both gateways are **free to register** — you only pay a small per-transaction fee when a real payment is made. In sandbox/test mode they are completely free.
+
+When no payment keys are configured, the service runs in **mock mode**: payments are recorded in the database immediately without calling any external provider. This is the default for local development.
+
+### Stripe (recommended)
+
+1. Create a free account at [stripe.com](https://stripe.com)
+2. Go to **Developers → API keys** in the Dashboard
+3. Copy the **Secret key** (`sk_test_...` for sandbox, `sk_live_...` for production)
+4. Add to `.env`:
+   ```env
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_RETURN_URL=http://localhost:3001/booking/confirm
+   ```
+5. Frontend integration: load **Stripe.js** and use `stripe.createPaymentMethod()` to tokenize card details. Send the resulting `pm_xxx` ID as `payment_token` in the payment request.
+
+**Test cards (sandbox):**
+| Card number | Behaviour |
+|---|---|
+| `4242 4242 4242 4242` | Always succeeds |
+| `4000 0025 0000 3155` | Requires 3D Secure authentication |
+| `4000 0000 0000 9995` | Always declines |
+
+Use any future expiry date, any 3-digit CVC, and any 5-digit postcode.
+
+### Mollie (EU-native alternative)
+
+1. Create a free account at [mollie.com](https://mollie.com)
+2. Go to **Settings → API keys**
+3. Copy the **Test API key** (`test_...`) or **Live API key** (`live_...`)
+4. Add to `.env`:
+   ```env
+   MOLLIE_API_KEY=test_...
+   MOLLIE_REDIRECT_URL=http://localhost:3001/booking/confirm
+   ```
+5. Frontend integration: use **Mollie Components** to collect card details. Pass the resulting method token as `payment_token` in the payment request.
+
+Mollie is particularly well suited for the Italian/EU market and supports iDEAL, Bancontact, SEPA Direct Debit, and other local payment methods in addition to credit cards.
+
+### Payment request format
+
+```json
+POST /api/payments/process
+{
+  "booking_id": "uuid",
+  "amount": 35.00,
+  "currency": "EUR",
+  "payment_method": "card",
+  "payment_provider": "stripe",
+  "payment_token": "pm_1ABC..."
+}
+```
+
+`payment_token` is required when `payment_provider` is `stripe` or `mollie`. It is not needed for `manual` (mock mode).
 
 ---
 
