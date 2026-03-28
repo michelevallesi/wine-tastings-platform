@@ -19,10 +19,22 @@ async function ensureUser() {
     }
   }
   if (!state.tenant && state.user.tenant_id) {
+    // Primary: fetch by ID
     try {
       const res = await api.getTenant(state.user.tenant_id);
       state.tenant = res.data.tenant;
-    } catch {}
+    } catch (e) {
+      console.warn('getTenant failed, trying tenants list fallback:', e.message);
+    }
+    // Fallback: search the public tenants list
+    if (!state.tenant) {
+      try {
+        const res = await api.getTenants();
+        state.tenant = (res.data.tenants || []).find(t => t.id === state.user.tenant_id) || null;
+      } catch (e) {
+        console.error('Tenant fallback also failed:', e.message);
+      }
+    }
   }
   return true;
 }
@@ -63,6 +75,12 @@ export async function renderDashboard(container, { tab = 'overview' } = {}) {
   `;
 
   const content = document.getElementById('dash-content');
+
+  if (!state.tenant) {
+    content.innerHTML = `<div class="error-state"><p>Impossibile caricare il profilo del produttore.</p><button class="btn btn-primary" onclick="location.reload()">Riprova</button></div>`;
+    return;
+  }
+
   switch (tab) {
     case 'tastings':  await renderTastingsTab(content); break;
     case 'bookings':  await renderBookingsTab(content); break;
