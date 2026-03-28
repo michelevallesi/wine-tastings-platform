@@ -30,7 +30,7 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "-a", "wine_redis_pass", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -98,13 +98,14 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
-      - REDIS_URL=redis://:wine_redis_pass@redis:6379
-      - FILE_STORAGE_PATH=/uploads
-    volumes:
-      - uploads_data:/uploads
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - wine-network
 
@@ -117,6 +118,7 @@ services:
       - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
       - REDIS_URL=redis://:wine_redis_pass@redis:6379
       - NOTIFICATION_SERVICE_URL=http://notification-service:3006
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -130,12 +132,21 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - JWT_SECRET=${JWT_SECRET}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_RETURN_URL=${STRIPE_RETURN_URL:-https://your-frontend-domain.com/booking/confirm}
       - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
       - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
+      - MOLLIE_API_KEY=${MOLLIE_API_KEY}
+      - MOLLIE_REDIRECT_URL=${MOLLIE_REDIRECT_URL:-https://your-frontend-domain.com/booking/confirm}
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - wine-network
 
@@ -153,6 +164,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - wine-network
 
@@ -163,10 +179,15 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
-      - REDIS_URL=redis://:wine_redis_pass@redis:6379
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - wine-network
 
@@ -177,6 +198,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - JWT_SECRET=${JWT_SECRET}
       - FILE_STORAGE_PATH=/uploads
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
     volumes:
@@ -184,6 +206,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - wine-network
 
@@ -215,7 +242,7 @@ services:
     ports:
       - "3010:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
     volumes:
       - grafana_data:/var/lib/grafana
     networks:

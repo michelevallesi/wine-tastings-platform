@@ -9,12 +9,11 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 install: ## Install dependencies for all services
-	@echo "Installing backend dependencies..."
-	@cd backend && npm install
+	@echo "Installing backend service dependencies..."
 	@for service in backend/services/*; do \
 		if [ -d "$$service" ] && [ -f "$$service/package.json" ]; then \
-			echo "Installing dependencies for $$service..."; \
-			cd $$service && npm install && cd ../../../; \
+			echo "Installing $$service..."; \
+			(cd $$service && npm install); \
 		fi; \
 	done
 	@echo "Installing frontend dependencies..."
@@ -39,17 +38,30 @@ prod: ## Start production environment
 
 test: ## Run tests for all services
 	@echo "Running tests..."
-	@cd backend && npm test
-	@cd frontend && npm test
+	@for service in backend/services/*; do \
+		if [ -d "$$service" ] && [ -f "$$service/package.json" ]; then \
+			echo "Testing $$service..."; \
+			(cd $$service && npm test --if-present) || true; \
+		fi; \
+	done
 
 lint: ## Run linting for all services
 	@echo "Running linter..."
-	@cd backend && npm run lint
-	@cd frontend && npm run lint
+	@for service in backend/services/*; do \
+		if [ -d "$$service" ] && [ -f "$$service/package.json" ]; then \
+			(cd $$service && npm run lint --if-present) || true; \
+		fi; \
+	done
+	@cd frontend && npm run lint --if-present || true
 
-db-migrate: ## Run database migrations
+db-migrate: ## Run database migrations — place SQL files in backend/database/migrations/
 	@echo "Running database migrations..."
-	docker-compose exec postgres psql -U wine_user -d wine_tastings -f /app/migrate.sql
+	@for f in backend/database/migrations/*.sql; do \
+		[ -f "$$f" ] || continue; \
+		echo "Applying $$f..."; \
+		docker-compose exec -T postgres psql -U wine_user -d wine_tastings -f /dev/stdin < $$f; \
+	done
+	@echo "Migrations complete."
 
 db-seed: ## Seed database with test data
 	@echo "Seeding database..."

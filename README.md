@@ -1,136 +1,168 @@
-# 🍷 Wine Tastings Platform
+# Wine Tastings Platform
 
-Una piattaforma multi-tenant completa per la gestione di prenotazioni di degustazioni di vini, con architettura a microservizi e frontend separato.
+A multi-tenant SaaS platform for Italian wine producers to manage and sell wine tasting experiences. Customers browse available tastings, book a slot, pay online, and receive a QR-coded confirmation. Producers manage their catalog, schedule, and bookings through a dedicated interface.
 
-## 🚀 Quick Start
+## Quick Start
 
-### Prerequisiti
+### Prerequisites
 - Docker & Docker Compose
 - Node.js 18+
-- Git
+- Make
 
-### Setup Rapido
+### Development Setup
 ```bash
-# Estrai il progetto
-unzip wine-tastings-platform.zip
+git clone <repository>
 cd wine-tastings-platform
 
-# Setup automatico
-chmod +x infrastructure/scripts/setup.sh
-./infrastructure/scripts/setup.sh
+# Install all service dependencies
+make install
 
-# Avvia ambiente sviluppo
+# Start full development stack (all 9 services + PostgreSQL + Redis)
 make dev
+
+# Load demo data
+make db-seed
 ```
 
-### Accesso Applicazioni
-- **Frontend**: http://localhost:3001
-- **Backend API**: http://localhost:3000
-- **Database**: localhost:5433
-- **Monitoring**: http://localhost:3010
+### Access Points
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3001 |
+| API Gateway | http://localhost:3000 |
+| PostgreSQL | localhost:5433 |
+| Prometheus | http://localhost:9090 (prod only) |
+| Grafana | http://localhost:3010 (prod only) |
 
-## 📁 Struttura Progetto
+### Demo Credentials
+| Tenant | Email | Password |
+|---|---|---|
+| Cantina Rossi (Chianti) | admin@cantinarossi.it | admin123 |
+| Villa Bianchi (Barolo) | admin@villabianchi.it | admin123 |
+
+## Project Structure
 
 ```
 wine-tastings-platform/
-├── backend/           # Microservizi API
-├── frontend/          # SPA Client
-├── infrastructure/    # DevOps e Deploy
-├── docs/             # Documentazione
-└── docker-compose.yml
+├── backend/
+│   ├── database/
+│   │   ├── init.sql                   # Schema (source of truth)
+│   │   └── seeds/001_initial_data.sql # Demo data
+│   └── services/
+│       ├── api-gateway/               # Port 3000 — routing, auth, rate limiting
+│       ├── auth-service/              # Port 3001 — JWT, sessions (Redis)
+│       ├── tenant-service/            # Port 3002 — wine producer management
+│       ├── tasting-service/           # Port 3003 — tasting catalog
+│       ├── booking-service/           # Port 3004 — reservations, QR codes
+│       ├── payment-service/           # Port 3005 — Stripe / PayPal
+│       ├── notification-service/      # Port 3006 — email (nodemailer), SMS (Twilio)
+│       ├── analytics-service/         # Port 3007 — reporting, metrics
+│       └── file-service/              # Port 3008 — uploads, AWS S3
+├── frontend/
+│   ├── src/main.js                    # Single entry point (vanilla JS + Vite)
+│   ├── nginx.conf                     # Production nginx config
+│   └── Dockerfile                     # Multi-stage production build
+├── docs/
+│   ├── PRD.md                         # Product Requirements Document
+│   ├── api/README.md                  # API reference
+│   ├── deployment/README.md           # Deployment guide
+│   └── development/README.md          # Developer guide
+├── docker-compose.yml                 # Production stack
+├── docker-compose.dev.yml             # Development stack (hot-reload)
+└── Makefile                           # Build and operational commands
 ```
 
-## 🔧 Comandi Principali
+## Make Targets
 
 ```bash
-make dev              # Ambiente sviluppo
-make prod             # Ambiente produzione
-make test             # Run tests
-make logs             # View logs
-make health           # Health check
-make db-seed          # Seed database
+make dev              # Start development environment
+make prod             # Start production environment
+make install          # Install all service dependencies
+make test             # Run all service tests
+make lint             # ESLint across all services
+make db-seed          # Load demo data
+make db-migrate       # Run SQL migrations
+make logs             # Tail all service logs
+make logs-service SERVICE=api-gateway  # Logs for a specific service
+make stop             # Stop all containers
+make clean            # Remove volumes and prune images
+make backup-db        # Dump PostgreSQL to file
+make health           # Run health checks on all services
+make monitoring       # Start Prometheus + Grafana
 ```
 
-## 📊 Architettura
+## Architecture
 
-### Backend (9 Microservizi)
-- **API Gateway** (3000) - Routing e autenticazione
-- **Auth Service** (3001) - JWT e gestione utenti
-- **Tenant Service** (3002) - Gestione cantine
-- **Tasting Service** (3003) - Gestione degustazioni
-- **Booking Service** (3004) - Prenotazioni e QR codes
-- **Payment Service** (3005) - Elaborazione pagamenti
-- **Notification Service** (3006) - Email e SMS
-- **Analytics Service** (3007) - Analytics e reports
-- **File Service** (3008) - Upload e gestione file
+### Backend — 9 Microservices (Node.js / Express)
+
+Each service is an independent Express application with its own PostgreSQL connection pool, Winston logger, and Dockerfile. All traffic is routed through the API Gateway.
+
+```
+Client → [nginx :80] → [API Gateway :3000] → [Service :300x] → [PostgreSQL / Redis]
+```
+
+**Service communication:** HTTP proxying via `http-proxy-middleware`. No message queue in v1.0.
+
+**Multi-tenancy:** Every resource is scoped to a `tenant_id`. Enforced at the application layer — no PostgreSQL row-level security.
+
+**Concurrency safety:** Booking capacity is enforced with a `SELECT FOR UPDATE` transaction, preventing double-booking under concurrent load.
 
 ### Frontend
-- Single Page Application API-consumer
-- Multi-tenant support
-- Responsive design
-- Real-time updates
+
+Vanilla JavaScript SPA built with Vite. No framework (no React/Vue/Angular). Served by nginx in production with a reverse proxy to the API Gateway.
 
 ### Database
-- **PostgreSQL** - Database principale
-- **Redis** - Cache e sessioni
 
-## 🔒 Sicurezza
+- **PostgreSQL 15** — primary datastore; UUID PKs, `updated_at` triggers on all mutable tables
+- **Redis 7** — JWT session storage and refresh token store
 
-- JWT Authentication
-- Rate limiting
-- Input validation
-- XSS/CSRF protection
-- HTTPS enforcement
+## API
 
-## 📱 Funzionalità
+Base URL: `http://localhost:3000` (dev) / `https://api.wine-tastings.com` (prod)
 
-### Per Clienti
-- ✅ Browsing degustazioni
-- ✅ Prenotazione con calendario
-- ✅ Pagamento sicuro
-- ✅ Conferma con QR code
+Authentication: `Authorization: Bearer <jwt>` (24-hour tokens, refreshable)
 
-### Per Produttori
-- ✅ Dashboard analytics
-- ✅ Gestione degustazioni
-- ✅ Gestione prenotazioni
-- ✅ Reports e metriche
+See [docs/api/README.md](docs/api/README.md) for the full endpoint reference.
 
-## 🚀 Deployment
+## Security
 
-### Docker Compose (Locale)
-```bash
-docker-compose up -d
-```
+- Passwords hashed with bcrypt; never stored in plaintext
+- All SQL uses parameterized queries (`$1, $2`) — no string interpolation
+- HTML email content sanitized with `sanitize-html` before delivery
+- `helmet` security headers on every service
+- CORS restricted to `ALLOWED_ORIGINS` env var (no wildcard in production)
+- HTTPS enforced via `Strict-Transport-Security` header
+- Rate limited at the gateway: 1,000 requests / 15 min / IP
 
-### Kubernetes (Produzione)
-```bash
-kubectl apply -f infrastructure/kubernetes/
-```
+## Environment Variables
 
-### Cloud (AWS/GCP/Azure)
-```bash
-terraform apply infrastructure/terraform/
-```
+Copy `.env.example` to `.env` and fill in production values:
 
-## 📚 Documentazione
+| Variable | Description |
+|---|---|
+| `JWT_SECRET` | JWT signing secret — **must be changed in production** |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | Redis connection string |
+| `STRIPE_SECRET_KEY` | Stripe API key (payment-service) |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | PayPal credentials (payment-service) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Email config (notification-service) |
+| `AWS_S3_BUCKET` | S3 bucket for file uploads (file-service) |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins (api-gateway) |
 
-- **API Documentation**: [docs/api/](docs/api/)
-- **Deployment Guide**: [docs/deployment/](docs/deployment/)
-- **Development Guide**: [docs/development/](docs/development/)
+## Documentation
 
-## 🤝 Contribuire
+- [Product Requirements Document](docs/PRD.md)
+- [API Reference](docs/api/README.md)
+- [Deployment Guide](docs/deployment/README.md)
+- [Developer Guide](docs/development/README.md)
+- [AI Assistant Guide](CLAUDE.md)
 
-1. Fork del repository
-2. Crea feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push al branch (`git push origin feature/amazing-feature`)
-5. Apri Pull Request
+## Contributing
 
-## 📄 License
+1. Branch from `main`: `git checkout -b feature/your-feature`
+2. Make changes; follow code style conventions in [CLAUDE.md](CLAUDE.md)
+3. Ensure CI passes: `make test && make lint`
+4. Open a pull request against `main`
 
-MIT License
+## License
 
----
-
-**Costruito con ❤️ per l'industria vinicola italiana**
+MIT
