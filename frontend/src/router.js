@@ -1,5 +1,7 @@
 const routes = {};
 let notFoundHandler = null;
+let _container = null;
+let _renderNav  = null;
 
 export function route(path, handler) {
   routes[path] = handler;
@@ -31,11 +33,26 @@ function matchRoute(hash) {
   return null;
 }
 
+export function rerender() {
+  if (!_container || !_renderNav) return;
+  _renderNav();
+  const hash   = window.location.hash || '#/';
+  const result = matchRoute(hash);
+  if (result) {
+    result.handler(_container, result.params);
+  } else if (notFoundHandler) {
+    notFoundHandler(_container);
+  }
+}
+
 export function startRouter(container, renderNav) {
+  _container  = container;
+  _renderNav  = renderNav;
+
   function handleRoute() {
     renderNav();
     window.scrollTo(0, 0);
-    const hash = window.location.hash || '#/';
+    const hash   = window.location.hash || '#/';
     const result = matchRoute(hash);
     if (result) {
       result.handler(container, result.params);
@@ -43,6 +60,7 @@ export function startRouter(container, renderNav) {
       notFoundHandler(container);
     }
   }
+
   window.addEventListener('hashchange', handleRoute);
   handleRoute();
 }

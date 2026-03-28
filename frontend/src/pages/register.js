@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { state } from '../state.js';
 import { navigate } from '../router.js';
 import { showToast } from '../components/toast.js';
+import { t } from '../i18n.js';
 
 export function renderRegister(container) {
   if (api.isAuthenticated()) { navigate('#/dashboard'); return; }
@@ -10,61 +11,61 @@ export function renderRegister(container) {
     <div class="auth-wrapper">
       <div class="auth-card auth-card-wide">
         <div class="auth-logo">🍷</div>
-        <h1>Registra la tua Cantina</h1>
-        <p class="auth-subtitle">Crea il tuo profilo produttore e inizia a gestire le degustazioni</p>
+        <h1>${t('register.title')}</h1>
+        <p class="auth-subtitle">${t('register.subtitle')}</p>
 
         <form id="register-form">
-          <div class="register-section-label">Il tuo account</div>
+          <div class="register-section-label">${t('register.account_section')}</div>
           <div class="form-row">
             <div class="form-group">
-              <label for="r-name">Nome e Cognome *</label>
+              <label for="r-name">${t('register.name')}</label>
               <input type="text" id="r-name" required placeholder="Mario Rossi">
             </div>
             <div class="form-group">
-              <label for="r-email">Email *</label>
+              <label for="r-email">${t('register.email')}</label>
               <input type="email" id="r-email" required placeholder="mario@cantina.it" autocomplete="email">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="r-password">Password *</label>
-              <input type="password" id="r-password" required placeholder="Min. 8 caratteri" autocomplete="new-password">
+              <label for="r-password">${t('register.password')}</label>
+              <input type="password" id="r-password" required placeholder="${t('register.password_placeholder')}" autocomplete="new-password">
             </div>
             <div class="form-group">
-              <label for="r-password2">Conferma Password *</label>
-              <input type="password" id="r-password2" required placeholder="Ripeti la password" autocomplete="new-password">
+              <label for="r-password2">${t('register.confirm_password')}</label>
+              <input type="password" id="r-password2" required placeholder="${t('register.confirm_placeholder')}" autocomplete="new-password">
             </div>
           </div>
 
-          <div class="register-section-label">La tua cantina</div>
+          <div class="register-section-label">${t('register.winery_section')}</div>
           <div class="form-group">
-            <label for="r-winery">Nome Cantina *</label>
+            <label for="r-winery">${t('register.winery')}</label>
             <input type="text" id="r-winery" required placeholder="Es. Cantina Rossi">
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="r-location">Zona / Regione</label>
+              <label for="r-location">${t('register.location')}</label>
               <input type="text" id="r-location" placeholder="Es. Chianti, Toscana">
             </div>
             <div class="form-group">
-              <label for="r-phone">Telefono</label>
+              <label for="r-phone">${t('register.phone')}</label>
               <input type="tel" id="r-phone" placeholder="+39 055 000000">
             </div>
           </div>
           <div class="form-group">
-            <label for="r-website">Sito Web</label>
+            <label for="r-website">${t('register.website')}</label>
             <input type="url" id="r-website" placeholder="https://lacantina.it">
           </div>
 
           <div id="register-error" class="form-error" style="display:none;"></div>
 
           <button type="submit" id="register-submit" class="btn btn-primary btn-block" style="margin-top:.5rem">
-            Crea Account
+            ${t('register.submit')}
           </button>
         </form>
 
         <p class="auth-switch">
-          Hai già un account? <a href="#/login" class="auth-switch-link">Accedi</a>
+          ${t('register.login_prompt')} <a href="#/login" class="auth-switch-link">${t('register.login_link')}</a>
         </p>
       </div>
     </div>
@@ -79,13 +80,13 @@ export function renderRegister(container) {
     const password  = document.getElementById('r-password').value;
     const password2 = document.getElementById('r-password2').value;
     if (password !== password2) {
-      errEl.textContent = 'Le password non coincidono.';
+      errEl.textContent   = t('register.error_passwords');
       errEl.style.display = 'block';
       return;
     }
 
-    btn.disabled = true;
-    btn.textContent = 'Creazione in corso...';
+    btn.disabled    = true;
+    btn.textContent = t('register.creating');
 
     try {
       const res = await api.register({
@@ -94,17 +95,17 @@ export function renderRegister(container) {
         password,
         winery_name: document.getElementById('r-winery').value.trim(),
         location:    document.getElementById('r-location').value.trim() || undefined,
-        phone:       document.getElementById('r-phone').value.trim() || undefined,
-        website:     document.getElementById('r-website').value.trim() || undefined,
+        phone:       document.getElementById('r-phone').value.trim()    || undefined,
+        website:     document.getElementById('r-website').value.trim()  || undefined,
       });
       state.user = res.data.user;
-      showToast('Registrazione completata! Benvenuto.');
+      showToast(t('register.welcome_toast'));
       navigate('#/dashboard');
     } catch (err) {
-      errEl.textContent = err.message || 'Errore durante la registrazione. Riprova.';
+      errEl.textContent   = err.message || t('register.error');
       errEl.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = 'Crea Account';
+      btn.disabled        = false;
+      btn.textContent     = t('register.submit');
     }
   });
 }
