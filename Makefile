@@ -27,7 +27,7 @@ dev: ## Start development environment
 	@echo "Starting development environment..."
 	docker-compose -f docker-compose.dev.yml up -d
 	@echo "Development environment started!"
-	@echo "Frontend: http://localhost:3001"
+	@echo "Frontend: http://localhost:5173"
 	@echo "API: http://localhost:3000"
 	@echo "Database: localhost:5433"
 
