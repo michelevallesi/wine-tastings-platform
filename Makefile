@@ -25,7 +25,7 @@ build: ## Build all Docker images
 
 dev: ## Start development environment
 	@echo "Starting development environment..."
-	docker-compose -f docker-compose.dev.yml up -d
+	docker compose -f docker-compose.dev.yml up -d
 	@echo "Development environment started!"
 	@echo "Frontend: http://localhost:5173"
 	@echo "API: http://localhost:3000"
