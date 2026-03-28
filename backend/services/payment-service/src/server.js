@@ -68,6 +68,10 @@ app.post('/api/payments/process', async (req, res) => {
 
     const transaction_id = `TXN-${randomUUID()}`;
 
+    // TODO(payment): wire real Stripe/PayPal SDK calls here.
+    // For Stripe: const charge = await stripe.charges.create({ amount, currency, source: paymentToken });
+    // For PayPal: use paypal-rest-sdk to create and execute a payment object.
+    // transaction_id should come from the provider response, not generated locally.
     const paymentResult = await pool.query(
       `INSERT INTO payments
          (booking_id, amount, currency, payment_method, payment_provider, transaction_id, status, processed_at)
@@ -130,6 +134,8 @@ app.post('/api/payments/refund', requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, error: 'No paid payment found for this booking' });
     }
 
+    // TODO(payment): issue real refund via provider SDK before updating DB.
+    // e.g. for Stripe: await stripe.refunds.create({ charge: paymentResult.rows[0].transaction_id });
     await pool.query('UPDATE payments SET status = $1 WHERE id = $2', ['refunded', paymentResult.rows[0].id]);
     await pool.query(
       `UPDATE bookings SET payment_status = 'refunded', status = 'cancelled' WHERE id = $1`,

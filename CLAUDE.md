@@ -32,7 +32,7 @@ Nine independent services, each on its own port, all exposed through the API Gat
 | `analytics-service` | 3007 | Reporting and metrics |
 | `file-service` | 3008 | File uploads, AWS S3 |
 
-**Implementation status:** Only `api-gateway`, `auth-service`, `tenant-service`, and `booking-service` have full `src/` implementations. The remaining services are structural shells.
+**Implementation status:** All 9 services have full `src/` implementations. `payment-service` and `file-service` use mock/local-disk implementations for Stripe/PayPal and S3 respectively (see TODO comments in those files).
 
 ### Frontend
 
@@ -62,12 +62,12 @@ wine-tastings-platform/
 │       ├── api-gateway/src/server.js
 │       ├── auth-service/src/server.js
 │       ├── tenant-service/src/server.js
-│       ├── tasting-service/
+│       ├── tasting-service/src/server.js
 │       ├── booking-service/src/server.js
-│       ├── payment-service/
-│       ├── notification-service/
-│       ├── analytics-service/
-│       └── file-service/
+│       ├── payment-service/src/server.js
+│       ├── notification-service/src/server.js
+│       ├── analytics-service/src/server.js
+│       └── file-service/src/server.js
 ├── frontend/
 │   ├── src/main.js                    # Single entry point
 │   ├── index.html
@@ -152,14 +152,33 @@ All service routes follow: `/api/<service-name>/...`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | /api/auth/login | No | Returns JWT token |
+| POST | /api/auth/login | No | Returns `token` (24h JWT) + `refreshToken` (7d) |
+| POST | /api/auth/refresh | No | Exchange refresh token for new access token |
+| POST | /api/auth/logout | Yes | Revoke session and all refresh tokens |
 | GET | /api/auth/me | Yes | Current user info |
 | GET | /api/tenants | No | List all active tenants |
 | GET | /api/tenants/:id | No | Tenant by UUID or slug |
 | GET | /api/tastings/tenant/:tenantId | No | Tastings for a tenant |
+| GET | /api/tastings/:id | No | Single tasting by UUID |
+| POST | /api/tastings | Yes | Create tasting (producer) |
+| PUT | /api/tastings/:id | Yes | Update tasting (producer) |
+| DELETE | /api/tastings/:id | Yes | Soft-delete tasting (producer) |
 | POST | /api/bookings | No | Create booking (generates QR code) |
-| GET | /api/bookings/:id/qrcode | No | QR code image |
-| POST | /api/payments/process | No | Process payment |
+| GET | /api/bookings/:id | Yes | Booking detail |
+| PATCH | /api/bookings/:id | Yes | Update booking status |
+| GET | /api/bookings/tenant/:tenantId | Yes | All bookings for a tenant |
+| GET | /api/bookings/:id/qrcode | No | QR code image (PNG) |
+| POST | /api/payments/process | No | Process payment (mock — Stripe/PayPal TODO) |
+| GET | /api/payments/:bookingId | Yes | Payment records for a booking |
+| POST | /api/payments/refund | Yes | Issue refund |
+| POST | /api/notifications/send | No | Queue and send email notification |
+| GET | /api/notifications | No | List notifications (filter by tenant/booking) |
+| GET | /api/analytics/summary/:tenantId | Yes | Booking + revenue summary |
+| GET | /api/analytics/bookings/:tenantId | Yes | Booking trends over time |
+| GET | /api/analytics/revenue/:tenantId | Yes | Revenue by tasting |
+| POST | /api/files/upload | Yes | Upload file (local disk; S3 TODO) |
+| GET | /api/files/:id | No | File metadata |
+| DELETE | /api/files/:id | Yes | Delete file and metadata |
 
 Date format: ISO 8601 (`YYYY-MM-DDTHH:mm:ssZ`)
 
@@ -181,7 +200,7 @@ make dev       # Start development stack (docker-compose.dev.yml)
 Development-specific settings:
 - PostgreSQL on port `5433` (avoids conflicts with local 5432)
 - Redis without password
-- Hot-reload via nodemon for `api-gateway` and frontend (Vite HMR)
+- Hot-reload via nodemon for all backend services; frontend uses Vite HMR
 - Database: `wine_tastings_dev`
 
 ### Useful Make Targets

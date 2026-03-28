@@ -44,6 +44,10 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'
 ]);
 
+// TODO(s3): replace disk storage with AWS S3 using multer-s3.
+// When AWS_S3_BUCKET env var is set, upload directly to S3 and store the S3
+// key/URL in the DB instead of a local path. The aws-sdk package is included
+// for this purpose. Local disk storage is the current fallback.
 const storage = multer.diskStorage({
   destination: STORAGE_PATH,
   filename: (_req, file, cb) => {
