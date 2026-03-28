@@ -6,7 +6,7 @@ export async function renderHome(container) {
       <div class="hero-content">
         <h1>Scopri i Migliori Vini Italiani</h1>
         <p>Prenota la tua esperienza di degustazione con i produttori più rinomati d'Italia</p>
-        <a href="#producers" class="btn btn-white">Esplora i Produttori</a>
+        <button class="btn btn-white" id="scroll-to-producers">Esplora i Produttori</button>
       </div>
     </section>
     <div class="page-content" id="producers" style="scroll-margin-top:70px">
@@ -19,6 +19,10 @@ export async function renderHome(container) {
       </div>
     </div>
   `;
+
+  document.getElementById('scroll-to-producers')?.addEventListener('click', () => {
+    document.getElementById('producers').scrollIntoView({ behavior: 'smooth' });
+  });
 
   try {
     const { data } = await api.getTenants();
