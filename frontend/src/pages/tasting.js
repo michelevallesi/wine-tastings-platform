@@ -1,6 +1,5 @@
 import { api } from '../api.js';
 import { navigate } from '../router.js';
-import { showToast } from '../components/toast.js';
 
 export async function renderTasting(container, { id }) {
   container.innerHTML = `<div class="loading-spinner"><div class="spinner"></div><p>Caricamento...</p></div>`;
@@ -132,17 +131,7 @@ export async function renderTasting(container, { id }) {
         special_requests: document.getElementById('b-requests').value.trim(),
       });
       const booking = res.data.booking;
-
-      // Process mock payment
-      await api.processPayment({
-        booking_id: booking.id,
-        amount: booking.total_price,
-        currency: booking.currency,
-        payment_method: 'card',
-        payment_provider: 'stripe',
-      }).catch(() => {});
-
-      navigate(`#/booking/${booking.id}`);
+      navigate(`#/checkout/${booking.id}`);
     } catch (err) {
       errEl.textContent = err.message || 'Errore durante la prenotazione. Riprova.';
       errEl.style.display = 'block';
