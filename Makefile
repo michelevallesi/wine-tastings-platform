@@ -65,7 +65,7 @@ db-migrate: ## Run database migrations — place SQL files in backend/database/m
 
 db-seed: ## Seed database with test data
 	@echo "Seeding database..."
-	docker-compose exec postgres psql -U wine_user -d wine_tastings -f /docker-entrypoint-initdb.d/seeds/001_initial_data.sql
+	docker-compose -f docker-compose.dev.yml exec -T postgres psql -U dev_user -d wine_tastings_dev -f /docker-entrypoint-initdb.d/seeds/001_initial_data.sql
 
 logs: ## Show logs for all services
 	docker-compose logs -f
