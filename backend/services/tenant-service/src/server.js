@@ -42,23 +42,20 @@ app.get('/api/tenants', async (_req, res) => {
 });
 
 // GET /api/tenants/:identifier — get by UUID or slug (public)
+// Uses a single query: UUID format is detected via regex to choose the right
+// indexed column. The regex only validates format (8-4-4-4-12 hex), which is
+// sufficient to distinguish UUIDs from human-readable slugs.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 app.get('/api/tenants/:identifier', async (req, res) => {
   try {
     const { identifier } = req.params;
+    const isUUID = UUID_REGEX.test(identifier);
+    const query = isUUID
+      ? 'SELECT * FROM tenants WHERE id = $1 AND is_active = true'
+      : 'SELECT * FROM tenants WHERE slug = $1 AND is_active = true';
 
-    // Delegate UUID vs slug detection to PostgreSQL to avoid fragile regex
-    // Try UUID first; if the cast fails (invalid UUID format) fall through to slug lookup
-    let result = await pool.query(
-      `SELECT * FROM tenants WHERE id::text = $1 AND is_active = true`,
-      [identifier]
-    );
-
-    if (result.rows.length === 0) {
-      result = await pool.query(
-        'SELECT * FROM tenants WHERE slug = $1 AND is_active = true',
-        [identifier]
-      );
-    }
+    const result = await pool.query(query, [identifier]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Tenant not found' });

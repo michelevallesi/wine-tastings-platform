@@ -118,6 +118,7 @@ services:
       - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
       - REDIS_URL=redis://:wine_redis_pass@redis:6379
       - NOTIFICATION_SERVICE_URL=http://notification-service:3006
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -131,6 +132,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - JWT_SECRET=${JWT_SECRET}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
       - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
@@ -174,6 +176,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -192,6 +195,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://wine_user:wine_pass@postgres:5432/wine_tastings
+      - JWT_SECRET=${JWT_SECRET}
       - FILE_STORAGE_PATH=/uploads
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
     volumes:
@@ -235,7 +239,7 @@ services:
     ports:
       - "3010:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
     volumes:
       - grafana_data:/var/lib/grafana
     networks:

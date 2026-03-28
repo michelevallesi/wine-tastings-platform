@@ -3,6 +3,7 @@ const { Pool } = require('pg');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const jwt = require('jsonwebtoken');
 const helmet = require('helmet');
 const cors = require('cors');
 const winston = require('winston');
@@ -16,6 +17,20 @@ const logger = winston.createLogger({
 const app = express();
 const PORT = process.env.PORT || 3008;
 const STORAGE_PATH = process.env.FILE_STORAGE_PATH || '/uploads';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Authentication required', timestamp: new Date().toISOString() });
+  }
+  try {
+    req.user = jwt.verify(authHeader.slice(7), JWT_SECRET);
+    next();
+  } catch {
+    return res.status(401).json({ success: false, error: 'Invalid or expired token', timestamp: new Date().toISOString() });
+  }
+}
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 pool.on('error', (err) => logger.error('Unexpected pool error', { error: err.message }));
@@ -57,8 +72,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString(), service: 'file-service' });
 });
 
-// Upload a file
-app.post('/api/files/upload', (req, res, next) => {
+// Upload a file (protected)
+app.post('/api/files/upload', requireAuth, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) {
       return res.status(400).json({ success: false, error: err.message });
@@ -112,8 +127,8 @@ app.get('/api/files/:id', async (req, res) => {
   }
 });
 
-// Delete file
-app.delete('/api/files/:id', async (req, res) => {
+// Delete file (protected)
+app.delete('/api/files/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query('DELETE FROM files WHERE id = $1 RETURNING *', [id]);

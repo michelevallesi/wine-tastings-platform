@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const redis = require('redis');
+const { randomUUID } = require('crypto');
 const helmet = require('helmet');
 const cors = require('cors');
 const winston = require('winston');
@@ -36,21 +37,21 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString(), service: 'auth-service' });
 });
 
-// POST /api/login  (reached via gateway as POST /api/auth/login)
+// ── POST /api/login  (reached via gateway as POST /api/auth/login) ───────────
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'email and password are required'
-      });
+      return res.status(400).json({ success: false, error: 'email and password are required' });
     }
 
+    // Normalize email to lowercase for case-insensitive lookup
+    const normalizedEmail = email.toLowerCase().trim();
+
     const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1 AND is_active = true',
-      [email]
+      'SELECT * FROM users WHERE LOWER(email) = $1 AND is_active = true',
+      [normalizedEmail]
     );
     if (result.rows.length === 0) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
@@ -62,23 +63,27 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { userId: user.id, tenantId: user.tenant_id, role: user.role },
       secret,
       { expiresIn: '24h' }
     );
 
-    // Store session in Redis (24 h TTL)
-    await redisClient.setEx(`session:${user.id}`, 86400, token);
+    // Refresh token — random UUID stored in Redis with 7-day TTL
+    const refreshToken = randomUUID();
 
-    // Update last login timestamp
-    await pool.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
+    await Promise.all([
+      redisClient.setEx(`session:${user.id}`, 86400, accessToken),
+      redisClient.setEx(`refresh:${refreshToken}`, 7 * 86400, user.id),
+      pool.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id])
+    ]);
 
     logger.info('User logged in', { userId: user.id, tenantId: user.tenant_id });
     res.json({
       success: true,
       data: {
-        token,
+        token: accessToken,
+        refreshToken,
         user: {
           id:       user.id,
           email:    user.email,
@@ -95,7 +100,49 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// GET /api/me  (reached via gateway as GET /api/auth/me)
+// ── POST /api/refresh  (reached via gateway as POST /api/auth/refresh) ───────
+app.post('/api/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ success: false, error: 'refreshToken is required' });
+    }
+
+    const userId = await redisClient.get(`refresh:${refreshToken}`);
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Invalid or expired refresh token' });
+    }
+
+    const result = await pool.query(
+      'SELECT id, email, name, tenant_id, role FROM users WHERE id = $1 AND is_active = true',
+      [userId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'User not found or deactivated' });
+    }
+
+    const user = result.rows[0];
+    const newAccessToken = jwt.sign(
+      { userId: user.id, tenantId: user.tenant_id, role: user.role },
+      secret,
+      { expiresIn: '24h' }
+    );
+
+    await redisClient.setEx(`session:${user.id}`, 86400, newAccessToken);
+
+    logger.info('Token refreshed', { userId: user.id });
+    res.json({
+      success: true,
+      data: { token: newAccessToken },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Refresh error', { error: error.message });
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// ── GET /api/me  (reached via gateway as GET /api/auth/me) ───────────────────
 app.get('/api/me', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -111,7 +158,6 @@ app.get('/api/me', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid or expired token' });
     }
 
-    // Verify session still exists in Redis
     const sessionToken = await redisClient.get(`session:${decoded.userId}`);
     if (!sessionToken || sessionToken !== token) {
       return res.status(401).json({ success: false, error: 'Session expired or revoked' });
@@ -136,7 +182,7 @@ app.get('/api/me', async (req, res) => {
   }
 });
 
-// POST /api/logout  (reached via gateway as POST /api/auth/logout)
+// ── POST /api/logout  (reached via gateway as POST /api/auth/logout) ─────────
 app.post('/api/logout', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -144,9 +190,19 @@ app.post('/api/logout', async (req, res) => {
       const token = authHeader.slice(7);
       try {
         const decoded = jwt.verify(token, secret);
-        await redisClient.del(`session:${decoded.userId}`);
+        // Revoke access token and all refresh tokens for this user
+        const keys = await redisClient.keys(`refresh:*`);
+        const refreshDeletions = [];
+        for (const key of keys) {
+          const uid = await redisClient.get(key);
+          if (uid === decoded.userId) refreshDeletions.push(redisClient.del(key));
+        }
+        await Promise.all([
+          redisClient.del(`session:${decoded.userId}`),
+          ...refreshDeletions
+        ]);
       } catch {
-        // Token already invalid — logout is still successful
+        // Token already invalid — logout is still considered successful
       }
     }
     res.json({ success: true, message: 'Logged out successfully', timestamp: new Date().toISOString() });

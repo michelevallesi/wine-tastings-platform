@@ -96,7 +96,8 @@ CREATE TABLE payments (
     transaction_id VARCHAR(100) UNIQUE,
     status payment_status DEFAULT 'pending',
     processed_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Notifications table
@@ -110,7 +111,8 @@ CREATE TABLE notifications (
     content TEXT,
     status VARCHAR(20) DEFAULT 'pending',
     sent_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Files table
@@ -136,6 +138,9 @@ CREATE INDEX idx_tastings_active ON tastings(is_active);
 CREATE INDEX idx_bookings_tenant_date ON bookings(tenant_id, booking_date);
 CREATE INDEX idx_bookings_status ON bookings(status);
 CREATE INDEX idx_bookings_customer_email ON bookings(customer_email);
+-- Composite index for the slot capacity check (tasting_id + date + time, non-cancelled only)
+CREATE INDEX idx_bookings_tasting_slot ON bookings(tasting_id, booking_date, booking_time)
+  WHERE status <> 'cancelled';
 CREATE INDEX idx_payments_booking ON payments(booking_id);
 CREATE INDEX idx_notifications_tenant ON notifications(tenant_id);
 
@@ -149,7 +154,9 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for updated_at
-CREATE TRIGGER update_tenants_updated_at BEFORE UPDATE ON tenants FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER update_tastings_updated_at BEFORE UPDATE ON tastings FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_tenants_updated_at       BEFORE UPDATE ON tenants       FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_users_updated_at         BEFORE UPDATE ON users         FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_tastings_updated_at      BEFORE UPDATE ON tastings      FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_bookings_updated_at      BEFORE UPDATE ON bookings      FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_payments_updated_at      BEFORE UPDATE ON payments      FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();

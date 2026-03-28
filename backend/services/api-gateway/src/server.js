@@ -66,18 +66,16 @@ Object.entries(services).forEach(([name, target]) => {
     target,
     changeOrigin: true,
     pathRewrite,
-    on: {
-      proxyReq: (_proxyReq, req) => {
-        logger.info('Proxying request', { service: name, method: req.method, path: req.url });
-      },
-      error: (err, _req, res) => {
-        logger.error('Proxy error', { service: name, error: err.message });
-        res.status(503).json({
-          success: false,
-          error: 'Service temporarily unavailable',
-          timestamp: new Date().toISOString()
-        });
-      }
+    onProxyReq: (_proxyReq, req) => {
+      logger.info('Proxying request', { service: name, method: req.method, path: req.url });
+    },
+    onError: (err, _req, res) => {
+      logger.error('Proxy error', { service: name, error: err.message });
+      res.status(503).json({
+        success: false,
+        error: 'Service temporarily unavailable',
+        timestamp: new Date().toISOString()
+      });
     }
   }));
 });

@@ -1,5 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
 const helmet = require('helmet');
 const cors = require('cors');
 const winston = require('winston');
@@ -13,8 +14,22 @@ const logger = winston.createLogger({
 
 const app = express();
 const PORT = process.env.PORT || 3005;
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Authentication required', timestamp: new Date().toISOString() });
+  }
+  try {
+    req.user = jwt.verify(authHeader.slice(7), JWT_SECRET);
+    next();
+  } catch {
+    return res.status(401).json({ success: false, error: 'Invalid or expired token', timestamp: new Date().toISOString() });
+  }
+}
 pool.on('error', (err) => logger.error('Unexpected pool error', { error: err.message }));
 
 app.use(helmet());
@@ -79,8 +94,8 @@ app.post('/api/payments/process', async (req, res) => {
   }
 });
 
-// Get payments by booking ID
-app.get('/api/payments/:bookingId', async (req, res) => {
+// Get payments by booking ID (protected)
+app.get('/api/payments/:bookingId', requireAuth, async (req, res) => {
   try {
     const { bookingId } = req.params;
     const result = await pool.query(
@@ -98,8 +113,8 @@ app.get('/api/payments/:bookingId', async (req, res) => {
   }
 });
 
-// Refund
-app.post('/api/payments/refund', async (req, res) => {
+// Refund (protected)
+app.post('/api/payments/refund', requireAuth, async (req, res) => {
   try {
     const { booking_id } = req.body;
     if (!booking_id) {
