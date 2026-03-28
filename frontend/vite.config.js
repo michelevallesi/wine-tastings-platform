@@ -13,16 +13,6 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['chart.js', 'qrcode']
-        }
-      }
-    }
-  },
-  optimizeDeps: {
-    include: ['chart.js', 'qrcode']
+    sourcemap: true
   }
 })
