@@ -5,18 +5,23 @@ export async function renderCheckout(container, { id }) {
   container.innerHTML = `<div class="loading-spinner"><div class="spinner"></div><p>Caricamento ordine...</p></div>`;
 
   let booking;
-  try {
-    const res = await api.getBooking(id);
-    booking = res.data.booking;
-  } catch {
-    container.innerHTML = `
-      <div class="page-content">
-        <div class="error-state">
-          <p>Prenotazione non trovata.</p>
-          <a href="#/" class="btn btn-primary">Torna alla Home</a>
-        </div>
-      </div>`;
-    return;
+  const cached = sessionStorage.getItem(`booking_${id}`);
+  if (cached) {
+    booking = JSON.parse(cached);
+  } else {
+    try {
+      const res = await api.getBooking(id);
+      booking = res.data.booking;
+    } catch {
+      container.innerHTML = `
+        <div class="page-content">
+          <div class="error-state">
+            <p>Prenotazione non trovata.</p>
+            <a href="#/" class="btn btn-primary">Torna alla Home</a>
+          </div>
+        </div>`;
+      return;
+    }
   }
 
   if (booking.payment_status === 'paid') {
@@ -205,6 +210,8 @@ async function processPayment(booking, method, errElId, btnId) {
       payment_method: method,
       payment_provider: 'manual',
     });
+    const updated = { ...booking, payment_status: 'paid', status: 'confirmed' };
+    sessionStorage.setItem(`booking_${booking.id}`, JSON.stringify(updated));
     navigate(`#/booking/${booking.id}`);
   } catch (err) {
     errEl.textContent = err.message || 'Errore durante il pagamento. Riprova.';

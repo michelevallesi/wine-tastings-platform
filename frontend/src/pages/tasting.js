@@ -131,6 +131,7 @@ export async function renderTasting(container, { id }) {
         special_requests: document.getElementById('b-requests').value.trim(),
       });
       const booking = res.data.booking;
+      sessionStorage.setItem(`booking_${booking.id}`, JSON.stringify(booking));
       navigate(`#/checkout/${booking.id}`);
     } catch (err) {
       errEl.textContent = err.message || 'Errore durante la prenotazione. Riprova.';

@@ -85,11 +85,11 @@ app.post('/api/login', async (req, res) => {
         token: accessToken,
         refreshToken,
         user: {
-          id:       user.id,
-          email:    user.email,
-          name:     user.name,
-          tenantId: user.tenant_id,
-          role:     user.role
+          id:        user.id,
+          email:     user.email,
+          name:      user.name,
+          tenant_id: user.tenant_id,
+          role:      user.role
         }
       },
       timestamp: new Date().toISOString()
@@ -208,6 +208,73 @@ app.post('/api/logout', async (req, res) => {
     res.json({ success: true, message: 'Logged out successfully', timestamp: new Date().toISOString() });
   } catch (error) {
     logger.error('Logout error', { error: error.message });
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// ── POST /api/register  (reached via gateway as POST /api/auth/register) ─────
+// Self-registration for new wine producers. Creates a tenant + producer account.
+app.post('/api/register', async (req, res) => {
+  try {
+    const { name, email, password, winery_name, location, phone, website } = req.body;
+
+    if (!name || !email || !password || !winery_name) {
+      return res.status(400).json({
+        success: false,
+        error: 'name, email, password e winery_name sono obbligatori',
+      });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ success: false, error: 'La password deve avere almeno 8 caratteri' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await pool.query('SELECT id FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ success: false, error: 'Email già registrata' });
+    }
+
+    // Derive a unique slug from the winery name
+    const baseSlug = winery_name.toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const slugCheck = await pool.query("SELECT slug FROM tenants WHERE slug LIKE $1 || '%'", [baseSlug]);
+    const slug = slugCheck.rows.length === 0 ? baseSlug : `${baseSlug}-${randomUUID().substring(0, 6)}`;
+
+    const tenantId = randomUUID();
+    const userId   = randomUUID();
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await pool.query(
+      `INSERT INTO tenants (id, name, slug, location, phone, website, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, true)`,
+      [tenantId, winery_name.trim(), slug, location || null, phone || null, website || null]
+    );
+    await pool.query(
+      `INSERT INTO users (id, tenant_id, email, password_hash, name, role, is_active, email_verified)
+       VALUES ($1, $2, $3, $4, $5, 'producer', true, false)`,
+      [userId, tenantId, normalizedEmail, passwordHash, name.trim()]
+    );
+
+    const accessToken  = jwt.sign({ userId, tenantId, role: 'producer' }, secret, { expiresIn: '24h' });
+    const refreshToken = randomUUID();
+    await Promise.all([
+      redisClient.setEx(`session:${userId}`, 86400, accessToken),
+      redisClient.setEx(`refresh:${refreshToken}`, 7 * 86400, userId),
+    ]);
+
+    logger.info('Producer registered', { userId, tenantId });
+    res.status(201).json({
+      success: true,
+      data: {
+        token: accessToken,
+        refreshToken,
+        user: { id: userId, email: normalizedEmail, name: name.trim(), tenant_id: tenantId, role: 'producer' },
+      },
+      message: 'Registrazione completata con successo',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Register error', { error: error.message });
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });

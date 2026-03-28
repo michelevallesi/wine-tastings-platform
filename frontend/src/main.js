@@ -7,6 +7,7 @@ import { renderBookingConfirm } from './pages/booking-confirm.js';
 import { renderLogin } from './pages/login.js';
 import { renderDashboard } from './pages/dashboard.js';
 import { renderCheckout } from './pages/checkout.js';
+import { renderRegister } from './pages/register.js';
 
 const app = document.getElementById('app');
 app.innerHTML = '<main id="main-content"></main>';
@@ -17,6 +18,7 @@ route('/tasting/:id', (c, p) => renderTasting(c, p));
 route('/checkout/:id', (c, p) => renderCheckout(c, p));
 route('/booking/:id', (c, p) => renderBookingConfirm(c, p));
 route('/login', (c) => renderLogin(c));
+route('/register', (c) => renderRegister(c));
 route('/dashboard', (c) => renderDashboard(c, { tab: 'overview' }));
 route('/dashboard/:tab', (c, p) => renderDashboard(c, p));
 

@@ -24,6 +24,9 @@ export function renderLogin(container) {
           <div id="login-error" class="form-error" style="display:none;"></div>
           <button type="submit" id="login-submit" class="btn btn-primary btn-block">Accedi</button>
         </form>
+        <p class="auth-switch">
+          Nuovo produttore? <a href="#/register" class="auth-switch-link">Crea un account</a>
+        </p>
         <div class="auth-hint">
           <strong>Demo:</strong><br>
           admin@cantinarossi.it / admin123<br>

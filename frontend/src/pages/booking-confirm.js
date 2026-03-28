@@ -5,8 +5,15 @@ export async function renderBookingConfirm(container, { id }) {
   container.innerHTML = `<div class="loading-spinner"><div class="spinner"></div><p>Caricamento prenotazione...</p></div>`;
 
   try {
-    const res = await api.getBooking(id);
-    const b = res.data.booking;
+    let b;
+    const cached = sessionStorage.getItem(`booking_${id}`);
+    if (cached) {
+      b = JSON.parse(cached);
+      sessionStorage.removeItem(`booking_${id}`);
+    } else {
+      const res = await api.getBooking(id);
+      b = res.data.booking;
+    }
     const dateStr = new Date(b.booking_date).toLocaleDateString('it-IT', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });

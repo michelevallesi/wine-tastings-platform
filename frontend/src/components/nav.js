@@ -26,7 +26,8 @@ export function renderNav() {
           <a href="#/dashboard" class="nav-link ${hash.startsWith('#/dashboard') ? 'active' : ''}">Dashboard</a>
           <button class="nav-btn-logout" id="nav-logout">Esci</button>
         ` : `
-          <a href="#/login" class="btn btn-sm btn-primary ${hash === '#/login' ? 'active' : ''}">Accedi</a>
+          <a href="#/register" class="nav-link ${hash === '#/register' ? 'active' : ''}">Registrati</a>
+        <a href="#/login" class="btn btn-sm btn-primary ${hash === '#/login' ? 'active' : ''}">Accedi</a>
         `}
       </div>
       <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">

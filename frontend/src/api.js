@@ -25,6 +25,15 @@ export class ApiClient {
     return data;
   }
 
+  async register(payload) {
+    const data = await this.request('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    this.setToken(data.data.token);
+    return data;
+  }
+
   async login(email, password) {
     const data = await this.request('/api/auth/login', {
       method: 'POST',
