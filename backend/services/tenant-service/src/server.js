@@ -72,6 +72,53 @@ app.get('/api/tenants/:identifier', async (req, res) => {
   }
 });
 
+// PUT /api/tenants/:id — update tenant profile (authenticated producers)
+app.put('/api/tenants/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!UUID_REGEX.test(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid tenant ID' });
+    }
+
+    const { name, description, location, email, phone, website, logo_url } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'Name is required' });
+    }
+
+    const result = await pool.query(
+      `UPDATE tenants
+       SET name = $1, description = $2, location = $3, email = $4,
+           phone = $5, website = $6, logo_url = $7, updated_at = NOW()
+       WHERE id = $8 AND is_active = true
+       RETURNING *`,
+      [
+        name.trim(),
+        description?.trim() || null,
+        location?.trim() || null,
+        email?.trim() || null,
+        phone?.trim() || null,
+        website?.trim() || null,
+        logo_url?.trim() || null,
+        id,
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Tenant not found' });
+    }
+
+    res.json({
+      success: true,
+      data: { tenant: result.rows[0] },
+      message: 'Tenant updated successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Update tenant error', { error: error.message });
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 const server = app.listen(PORT, () => {
   logger.info(`Tenant service running on port ${PORT}`);
 });

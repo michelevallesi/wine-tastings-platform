@@ -6,11 +6,11 @@ This document provides AI assistants with the essential context needed to work e
 
 ## Project Overview
 
-A **multi-tenant SaaS platform** for Italian wine producers to manage and sell wine tasting experiences. Customers can browse available tastings, make bookings, receive QR-coded confirmations, and pay online. Producers manage their catalog, schedule, and bookings through a dedicated interface.
+A **multi-tenant SaaS platform** for Italian wine producers to manage and sell wine tasting experiences. Customers can browse available tastings, make bookings, receive QR-coded confirmations, and pay online. Producers manage their profile,catalog, schedule, and bookings through a dedicated interface.
 
 - **Version:** 1.0.0
 - **License:** MIT
-- **Language/Locale:** Italian-facing product (Italian labels, demo data, documentation)
+- **Language/Locale:** Multilanguage-facing product (Multilanguage labels, demo data, documentation)
 
 ---
 

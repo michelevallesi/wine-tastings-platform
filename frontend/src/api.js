@@ -52,6 +52,9 @@ export class ApiClient {
 
   async getTenants() { return this.request('/api/tenants'); }
   async getTenant(id) { return this.request(`/api/tenants/${encodeURIComponent(id)}`); }
+  async updateTenant(id, payload) {
+    return this.request(`/api/tenants/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) });
+  }
 
   async getTastingsByTenant(tenantId) {
     return this.request(`/api/tastings/tenant/${encodeURIComponent(tenantId)}`);
