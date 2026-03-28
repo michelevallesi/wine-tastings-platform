@@ -59,7 +59,7 @@ services:
       - PORT=3000
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=dev-secret-for-local
-      - ALLOWED_ORIGINS=http://localhost:3001
+      - ALLOWED_ORIGINS=http://localhost:5173
     depends_on:
       postgres:
         condition: service_healthy
@@ -166,9 +166,9 @@ services:
       # Set these to your sandbox keys to test real payment flows in dev.
       # Leave unset to run in mock mode (payments recorded without external calls).
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
-      - STRIPE_RETURN_URL=${STRIPE_RETURN_URL:-http://localhost:3001/booking/confirm}
+      - STRIPE_RETURN_URL=${STRIPE_RETURN_URL:-http://localhost:5173/booking/confirm}
       - MOLLIE_API_KEY=${MOLLIE_API_KEY:-}
-      - MOLLIE_REDIRECT_URL=${MOLLIE_REDIRECT_URL:-http://localhost:3001/booking/confirm}
+      - MOLLIE_REDIRECT_URL=${MOLLIE_REDIRECT_URL:-http://localhost:5173/booking/confirm}
     depends_on:
       postgres:
         condition: service_healthy
@@ -244,7 +244,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     ports:
-      - "3001:3001"
+      - "5173:5173"
     volumes:
       - ./frontend/src:/app/src
     environment:
